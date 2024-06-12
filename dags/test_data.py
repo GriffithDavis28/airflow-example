@@ -18,7 +18,7 @@ default_args = {
 
 def reading(**kwargs):
     
-    file_path = "dags/newData.json"
+    file_path = "dags/randomData.json"
     fileExists = os.path.isfile(file_path)
     
     if(fileExists!=False):
@@ -38,11 +38,14 @@ def filterData(**kwargs):
     ti = kwargs['ti']
     data=ti.xcom_pull(key='data', task_ids='read_data')
     
-    keys_to_check=["name", "email", "skills"]
-    
-    filteredData = {key: data[key] for key in keys_to_check if key in data}
-    
-    print("filtered data", filteredData)
+    keys_to_check=["ID", "Weight_kg"]
+    filteredData = []
+    for item in data:
+        if isinstance(item, dict):
+            filtered_data = {key: item[key] for key in keys_to_check if item in data}
+            filteredData.append(filtered_data)
+
+    print("Filtered data:", filteredData)
     
     ti.xcom_push(key='filteredData', value=filteredData)
     
@@ -52,11 +55,39 @@ def transformData(**kwargs):
     ti=kwargs['ti']
     filteredData=ti.xcom_pull(key='filteredData', task_ids='filter_data')
     
-    transformData ={key: (value.upper() if isinstance (value, str) else value)for key, value in filteredData.items()}
+    transformData = [{key.upper(): value for key, value in item.items()} for item in filteredData]
     
     print(transformData)
     
     ti.xcom_push(key='transformedData', value=transformData)
+
+
+def createTable():
+    try:
+        conn= psycopg2.connect(
+            dbname=db_connection["database"],
+            user=db_connection["username"],
+            password=db_connection["password"],
+            host=db_connection["host"],
+            port=db_connection["port"]
+        )
+        
+        logging.info("Connection established....")
+    except Exception as e:
+        logging.error(f'Error while connectiong...{e}')
+        return
+    
+    cursor=conn.cursor()
+    
+    try:
+        cursor.execute("""create table airflow.public.users (id int, weight_kg float)""")
+        logging.info("Table created successfully...")
+    except Exception as e:
+        logging.error(f"Could not create table...{e}")
+
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 
 def storeData(**kwargs):
@@ -75,19 +106,21 @@ def storeData(**kwargs):
         return
     
     ti=kwargs['ti']
-    record = ti.xcom_pull(key='transformedData', task_ids='transform_data')
-    
-    
+    records = ti.xcom_pull(key='transformedData', task_ids='transform_data')
     
     cursor=conn.cursor()
-    skills = json.dumps(record["skills"])
-    try:
-        cursor.execute("""
-                        INSERT INTO newtable (name, email, skills) VALUES (%s, %s, %s)
-                        """, (record["name"], record["email"], skills))
-        
-    except Exception as e:
-        logging.error(f'Something happened while executing query...{e}')
+    
+    
+    # skills = json.dumps(record["skills"])
+    for record in records:
+        try:
+            cursor.execute("""
+                        INSERT INTO users (id, weight_kg) VALUES (%s, %s)
+                        """, (record["ID"], record["WEIGHT_KG"]))
+            logging.info(type(record))
+            logging.info(f'content: {record}')
+        except Exception as e:
+            logging.error(f'Something happened while executing query...{e}')
     
     
     conn.commit()
@@ -97,7 +130,7 @@ def storeData(**kwargs):
     
     
 with DAG(
-    dag_id="migration_v3",
+    dag_id="migration_test_v8",
     description="Testing dag before pushing working code",
     default_args=default_args,
     start_date=datetime(2024, 6, 11, 8),
@@ -120,9 +153,13 @@ with DAG(
         # provide_context=True
     )
     task4 = PythonOperator(
+        task_id="table_creation",
+        python_callable=createTable
+    )
+    task5 = PythonOperator(
         task_id="store_data",
         python_callable=storeData,
         # provide_context=True
     )
     
-    task1>>task2>>task3>>task4
+    task1>>task2>>task3>>task4>>task5

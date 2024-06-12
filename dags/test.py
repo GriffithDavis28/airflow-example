@@ -18,18 +18,20 @@ def reading(file_path):
 
 
 def filter_data(data):
-    checklist = ["name", "email","city", "skills"]
-    print(type(checklist))
-    filtered_data = {key: data[key] for key in checklist if key in data}
+    keys_to_check = ["ID", "Weight_kg"]
 
-    print("Filtered data:", filtered_data)
+    filteredData = []
+    for item in data:
+        filtered_data = {key: item[key] for key in keys_to_check if item in data}
+        filteredData.append(filtered_data)
 
-    return filtered_data
+    print("Filtered data:", filteredData)
+
+    return filteredData
 
 
-def transform_data(filtered_data):
-    transformed_data = {key: (value.upper() if isinstance(value, str) else value) for key, value in
-                        filtered_data.items()}
+def transform_data(filteredData):
+    transformed_data = [{key.upper(): value for key, value in item.items()} for item in filteredData]
 
     print("Transformed data:", transformed_data)
 
@@ -43,7 +45,7 @@ def store_data(data, file_path):
 
 
 if __name__ == "__main__":
-    file_path = "/home/davisgriffith/Analytics/Python/airflow-docker/dags/testing.json"
+    file_path = "/home/davisgriffith/Analytics/Python/airflow-docker/dags/randomData.json"
     saved_data="/home/davisgriffith/Analytics/Python/airflow-docker/dags/data.json"
 
     # Step 1: Read the data
