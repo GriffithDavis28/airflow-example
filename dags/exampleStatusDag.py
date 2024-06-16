@@ -1,79 +1,96 @@
+from datetime import timedelta
 import logging
-
-import psycopg2
-
 from airflow import DAG
 from airflow.operators.python import PythonOperator, BranchPythonOperator
-from config.db_config import db_connection
-from datetime import datetime, timedelta
-from airflow.models import TaskInstance
+from airflow.utils.trigger_rule import TriggerRule
+
+def fail_state(ti):
+    ti.xcom_push(key='task_status', value='failed' )    
+    logging.error('Failed....')
+    raise Exception('Failed....')
+   
+
+def branch_task(ti, **kwargs):
+    failed_task_status = ti.xcom_pull(task_ids='failed_state', key='task_status')
+    if failed_task_status == 'failed':
+        state = 'skipped_state'
+    else:
+        state = 'success_state'
+    ti.xcom_push(key='task_status', value=state)
+    logging.info(f'Task state: {state}')
+    return state
+
+
+def success_state(ti):
+    ti.xcom_push(key='task_status', value='success')
+    logging.info('Success....')
+    print('Success....')
+
+
+def skip_state(ti):
+    ti.xcom_push(key='task_status', value='skipped')
+    logging.error('Skipped....')
+    print('Skipped....')
+
+
+def logs(ti):
+    fail_status=ti.xcom_pull(key='task_status', task_ids='failed_state')
+    logging.info(f'{fail_status}')
+    branch_status=ti.xcom_pull(key='task_status', task_ids='branch_state')
+    logging.info(f'{branch_status}')
+    skipped_status=ti.xcom_pull(key='task_status', task_ids='skipped_state')
+    logging.info(f'{skipped_status}')
+    success_status=ti.xcom_pull(key='task_status', task_ids='success_state')
+    logging.info(f'{success_status}')
 
 default_args = {
-    'owner': 'airflow',
-    'retries': 5,
-    'retry_delay': timedelta(minutes=10)
+    'owner': 'ariflow',
+    'retires': 5,
+    'retry_delay': timedelta(minutes=5)
 }
 
-
-def establishConnection():
-    try:
-        conn = psycopg2.connect(
-            host=db_connection["host"],
-            port=db_connection["port"],
-            user=db_connection["username"],
-            password=db_connection["password"],
-            database=db_connection["database"]
-        )
-
-        logging.info("Connection established....")
-        print("Connected...")
-        conn.close()
-
-        # kwargs['ti'].xcom_push(key='status', value='success')
-    except Exception as e:
-        logging.error(f'Connection not established....reason: {e}')
-        # kwargs['ti'].xcom_push(key='status', value='failed')
-        print(f"Error///{e}")
-        return
-
-#
-# check_previous_run_status = BranchPythonOperator(
-#     task_id="check_previous_run_status",
-#     python_callable=slack_notif_failure,
-#     op_kwargs={"dag_id": dag.dag_id, "task_id": 'check_previous_run_status',
-#                "func": check_last_run_status, "kwargs": {'data_stream_name': 'crm_campaign_run_stream',
-#                                                          'region': region,
-#                                                          'success_condition':
-#                                                              'start_run'}},
-#     dag=dag)
-
-
 with DAG(
-    dag_id="example_status_dag_run",
+    dag_id='status_dag_v3',
     default_args=default_args,
-    schedule_interval=timedelta(minutes=15),
-    start_date=datetime(2024, 6, 15, 10),
-    description="Checking dag status"
-    ) as dag:
-        task1=DummyOperator(
-            task_id='start',
-            
-        )
+    description='Checking stats',
+    schedule_interval=None
+) as dag:
+    failed_task = PythonOperator(
+        task_id='failed_state',
+        python_callable=fail_state,
+    )
+
+    branchTask = BranchPythonOperator(
+        task_id='branch_state',
+        python_callable=branch_task,
+        provide_context=True
+    )
+
+    success_task = PythonOperator(
+        task_id='success_state',
+        python_callable=success_state,
+        provide_context=True
+    )
+
+    skipped_task = PythonOperator(
+        task_id='skipped_state',
+        python_callable=skip_state,
+        provide_context=True,
+        trigger_rule=TriggerRule.ONE_SUCCESS
+    )
+
+    log_states = PythonOperator(
+        task_id='logging',
+        provide_context=True,
+        python_callable=logs,
+        trigger_rule=TriggerRule.ALL_DONE
+    )
+
+
+    failed_task>>branchTask
+
+    branchTask>>(skipped_task, success_task)
+
+    (skipped_task, success_task)>>log_states
+
     
-# with DAG(
-#         dag_id='example_status_dag_1',
-#         description="checking status of the dag",
-#         schedule_interval=timedelta(minutes=10),
-#         start_date=datetime(2024, 6, 14, 14, 33),
-#         default_args=default_args
-# ) as dag:
-#     task1 = PythonOperator(
-#         task_id="establish_connection",
-#         python_callable=establishConnection
-#     )
-#     task2 = PythonOperator(
-#         task_id="check_status",
-#         python_callable=check_state
-#     )
-#
-#     task1 >> task2
