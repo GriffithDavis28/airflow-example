@@ -1,0 +1,24 @@
+
+
+Solution 1:
+
+Create a function to hold the state of the task
+
+skip_count variable to start at zero 
+
+Enter max number of continuous skips allowed
+
+using check_previous_run_status check to check if status is skipped
+
+increase the count each time dag is triggered and if previous state is skipped/failed
+
+suppose dag run is success after 1-2 continous skips, reset skip_count to 0
+
+if skip_count matches the number of allowed_skips in the db, then with the dag_id raise an alert in slack
+
+
+storing the skips in a new table with the dag_id, task_id, skip_count, allowed_skips and timestamp to the db
+ and performing functions only on skip_count and allowed_skips (if necessary)
+
+
+

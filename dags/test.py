@@ -1,55 +1,50 @@
 import json
 import os
-from config import db_connection
+import pandas as pd
+from config import db_config
 
-def reading(file_path):
+def reading():
 
-    file_exists = os.path.isfile(file_path)
-
-    if file_exists:
-        print("File exists")
-        with open(file_path) as file:
-            data = json.load(file)
-            print(data)
-        return data
-    else:
-        print("File does not exist")
-        return None
+    df = pd.read_sql()
 
 
 def filter_data(data):
-    keys_to_check = ["ID", "Weight_kg"]
+
 
     filteredData = []
     for item in data:
-        filtered_data = {key: item[key] for key in keys_to_check if item in data}
-        filteredData.append(filtered_data)
+        filteredData = data.filter(items=["name", "email", "skills"])
 
-    print("Filtered data:", filteredData)
+
+    print("Filtered Data:\n",filteredData)
 
     return filteredData
 
 
 def transform_data(filteredData):
-    transformed_data = [{key.upper(): value for key, value in item.items()} for item in filteredData]
+    transformed_data = filteredData.copy()
+    transformed_data = transformed_data.map(lambda x: x.upper() if isinstance(x, str) else x)
+    transformed_data["skills"] = transformed_data["skills"].apply(
+        lambda skills: [skill.upper() for skill in skills] if isinstance(skills, list) else skills
+    )
 
-    print("Transformed data:", transformed_data)
+    print("Transformed data:\n", transformed_data)
+
 
     return transformed_data
 
 
-def store_data(data, file_path):
-    with open(file_path, 'w') as file:
-        json.dump(data, file)
-        print("Data stored..")
+def store_data(transformed_data, file_path):
+    transformed_data.to_json(file_path, orient='records', lines=True)
+    print(f'Data in file {file_path}')
 
 
 if __name__ == "__main__":
-    file_path = "/home/davisgriffith/Analytics/Python/airflow-docker/dags/randomData.json"
+    file_path = "/home/davisgriffith/Analytics/Python/airflow-docker/dags/testing.json"
     saved_data="/home/davisgriffith/Analytics/Python/airflow-docker/dags/data.json"
 
     # Step 1: Read the data
-    data = reading(file_path)
+    data = reading()
 
     if data is not None:
         # Step 2: Filter the data

@@ -3,7 +3,7 @@ import logging
 import os
 import psycopg2
 
-from config.db_connection import db_connection
+from config.db_config import db_connection
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
@@ -83,7 +83,7 @@ def storeData(**kwargs):
     skills = json.dumps(record["skills"])
     try:
         cursor.execute("""
-                        INSERT INTO newtable (name, email, skills) VALUES (%s, %s, %s)
+                        INSERT INTO users (name, email, skills) VALUES (%s, %s, %s)
                         """, (record["name"], record["email"], skills))
         
     except Exception as e:
@@ -100,8 +100,8 @@ with DAG(
     dag_id="migration_v3",
     description="Testing dag before pushing working code",
     default_args=default_args,
-    start_date=datetime(2024, 6, 11, 8),
-    schedule_interval='@daily',
+    start_date=datetime(2024, 6, 13, 11),
+    schedule_interval=timedelta(hours=2),
 )as dag:
     
     task1 = PythonOperator(

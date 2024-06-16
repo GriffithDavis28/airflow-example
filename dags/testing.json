@@ -1,4 +1,4 @@
-{
+[{
   "name": "John Doe",
   "email": "john.doe@example.com",
   "skills": ["JavaScript", "Python", "React"],
@@ -50,5 +50,112 @@
     "twitter": "@johnDoeSF",
     "linkedin": "linkedin.com/in/johnDoeSF"
   }
+},
+{
+  "name": "Jane Smith",
+  "email": "jane.smith@example.com",
+  "skills": ["Java", "Spring Boot", "Angular"],
+  "age": 29,
+  "city": "New York",
+  "occupation": "Backend Developer",
+  "hobbies": ["cooking", "reading", "yoga"],
+  "marital_status": "single",
+  "favorite_color": "blue",
+  "pets": [
+    {
+      "type": "dog",
+      "name": "Buddy",
+      "age": 4
+    }
+  ],
+  "car": {
+    "make": "Honda",
+    "model": "Civic",
+    "year": 2018
+  },
+  "languages_spoken": ["English", "Spanish"],
+  "education": {
+    "degree": "Bachelor's",
+    "field_of_study": "Information Technology",
+    "university": "New York University",
+    "year_graduated": 2016
+  },
+  "phone_number": "+1-212-555-7890",
+  "address": {
+    "street": "789 Park Ave",
+    "apartment": "34B",
+    "zipcode": "10021"
+  },
+  "favorite_food": "sushi",
+  "work_experience": [
+    {
+      "company": "DevTech",
+      "position": "Junior Developer",
+      "years": 2
+    },
+    {
+      "company": "CodeMasters",
+      "position": "Senior Developer",
+      "years": 5
+    }
+  ],
+  "social_media": {
+    "twitter": "@janeSmithNYC",
+    "linkedin": "linkedin.com/in/janeSmithNYC"
+  }
+},
+{
+  "name": "Michael Brown",
+  "email": "michael.brown@example.com",
+  "skills": ["Ruby on Rails", "HTML", "CSS"],
+  "age": 42,
+  "city": "Chicago",
+  "occupation": "Software Engineer",
+  "hobbies": ["cycling", "golfing", "fishing"],
+  "marital_status": "divorced",
+  "favorite_color": "red",
+  "pets": [
+    {
+      "type": "parrot",
+      "name": "Polly",
+      "age": 3
+    }
+  ],
+  "car": {
+    "make": "Ford",
+    "model": "Mustang",
+    "year": 2019
+  },
+  "languages_spoken": ["English", "German"],
+  "education": {
+    "degree": "Doctorate",
+    "field_of_study": "Software Engineering",
+    "university": "University of Chicago",
+    "year_graduated": 2008
+  },
+  "phone_number": "+1-312-555-2345",
+  "address": {
+    "street": "123 Lakeshore Dr",
+    "apartment": "56C",
+    "zipcode": "60611"
+  },
+  "favorite_food": "steak",
+  "work_experience": [
+    {
+      "company": "InnovateTech",
+      "position": "Software Developer",
+      "years": 4
+    },
+    {
+      "company": "BuildIt",
+      "position": "Engineering Manager",
+      "years": 8
+    }
+  ],
+  "social_media": {
+    "twitter": "@michaelBrownChi",
+    "linkedin": "linkedin.com/in/michaelBrownChi"
+  }
 }
+]
 

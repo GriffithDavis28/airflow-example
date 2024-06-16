@@ -3,7 +3,7 @@ import logging
 import os
 import psycopg2
 
-from config.db_connection import db_connection
+from config.db_config import db_connection
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
@@ -53,13 +53,18 @@ def filterData(**kwargs):
 
 def transformData(**kwargs):
     ti=kwargs['ti']
+    
     filteredData=ti.xcom_pull(key='filteredData', task_ids='filter_data')
     
-    transformData = [{key.upper(): value for key, value in item.items()} for item in filteredData]
+    transformedData = [{key.upper(): value for key, value in item.items()} for item in filteredData]
+    batch_size=20
+    batches=[transformedData[i:i+batch_size] for i in range(0, len(transformedData), batch_size)]
+    print(transformedData)
     
-    print(transformData)
+    ti.xcom_push(key='transformedData', value=transformedData)
+    ti.xcom_push(key='batches', value=batches)
     
-    ti.xcom_push(key='transformedData', value=transformData)
+    
 
 
 def createTable():
@@ -74,13 +79,13 @@ def createTable():
         
         logging.info("Connection established....")
     except Exception as e:
-        logging.error(f'Error while connectiong...{e}')
+        logging.error(f'Error while connecting...{e}')
         return
     
     cursor=conn.cursor()
     
     try:
-        cursor.execute("""create table airflow.public.users (id int, weight_kg float)""")
+        cursor.execute("""create table airflow.public.example (id int, weight_kg float)""")
         logging.info("Table created successfully...")
     except Exception as e:
         logging.error(f"Could not create table...{e}")
@@ -112,16 +117,21 @@ def storeData(**kwargs):
     
     
     # skills = json.dumps(record["skills"])
-    for record in records:
-        try:
-            cursor.execute("""
-                        INSERT INTO users (id, weight_kg) VALUES (%s, %s)
-                        """, (record["ID"], record["WEIGHT_KG"]))
-            logging.info(type(record))
-            logging.info(f'content: {record}')
-        except Exception as e:
-            logging.error(f'Something happened while executing query...{e}')
     
+    batches=ti.xcom_pull(key="batches", task_ids='transform_data')
+    for batch in batches:
+        for record in records:
+            try:
+                
+                logging.info(f'Batch processed : {batch}')
+                cursor.execute("""
+                            INSERT INTO example (id, weight_kg) VALUES (%s, %s)
+                            """, (record["ID"], record["WEIGHT_KG"]))
+                logging.info(type(record))
+        
+            except Exception as e:
+                logging.error(f'Something happened while executing query...{e}')
+        
     
     conn.commit()
     cursor.close()
@@ -130,11 +140,11 @@ def storeData(**kwargs):
     
     
 with DAG(
-    dag_id="migration_test_v8",
+    dag_id="migration_test_v13",
     description="Testing dag before pushing working code",
     default_args=default_args,
-    start_date=datetime(2024, 6, 11, 8),
-    schedule_interval='@daily',
+    start_date=datetime(2024, 6, 13, 1),
+    schedule_interval="@daily",
 )as dag:
     
     task1 = PythonOperator(
@@ -162,4 +172,6 @@ with DAG(
         # provide_context=True
     )
     
-    task1>>task2>>task3>>task4>>task5
+    task1>>task2>>task3>>task5
+    
+    task2>>task4
