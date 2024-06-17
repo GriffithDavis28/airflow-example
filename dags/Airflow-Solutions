@@ -12,7 +12,7 @@ using check_previous_run_status check to check if status is skipped
 
 increase the count each time dag is triggered and if previous state is skipped/failed
 
-suppose dag run is success after 1-2 continous skips, reset skip_count to 0
+suppose dag run is success after 1-2 continuous skips, reset skip_count to 0
 
 if skip_count matches the number of allowed_skips in the db, then with the dag_id raise an alert in slack
 
